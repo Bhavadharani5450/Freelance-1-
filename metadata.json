@@ -1,0 +1,6 @@
+{
+  "name": "Freeverse",
+  "description": "Campus-first freelancing and student community platform for Kangeyam Institute of Technology featuring verified Skill Passports, AI talent matching, campus gigs, and project marketplaces.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
