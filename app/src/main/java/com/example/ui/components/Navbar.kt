@@ -1,18 +1,16 @@
 package com.example.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,298 +19,347 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.data.model.CoordinatorMode
 import com.example.data.model.UserRole
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.FreeverseViewModel
 import com.example.ui.viewmodel.ScreenNav
 
 /**
- * Premium Responsive Navbar for FREEVERSE
- * Kangeyam Institute of Technology
- * Displays authentic Freeverse and KIT logos side-by-side,
- * quick role switcher for presentation, notifications bell, and navigation tabs.
+ * Public Landing Page Header
+ * Minimal, fast, and does not duplicate authenticated navigation.
  */
 @Composable
-fun FreeverseNavbar(
+fun PublicLandingHeader(
     viewModel: FreeverseViewModel,
-    onOpenDrawer: () -> Unit = {},
+    onNavigateSection: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val currentScreen by viewModel.currentScreen.collectAsState()
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = Color.White,
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Left: Logo + Single-line Brand
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { viewModel.navigateTo(ScreenNav.HOME) }
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.img_freeverse_logo),
+                    contentDescription = "FREEVERSE Logo",
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "FREEVERSE",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        color = FreeversePrimary,
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFFEBF3FF)
+                    ) {
+                        Text(
+                            text = "KIT",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FreeverseSecondary,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            // Right: Primary Actions (Login & Join)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { viewModel.navigateTo(ScreenNav.LOGIN_HUB) },
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, FreeversePrimary),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Login,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
+                        tint = FreeversePrimary
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Login",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = FreeversePrimary
+                    )
+                }
+
+                Button(
+                    onClick = { viewModel.navigateTo(ScreenNav.LOGIN_MEMBER) },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = FreeversePrimary),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Join FREEVERSE",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Authenticated Top Bar (Mobile / Compact View)
+ * Displays ONE clean hamburger button, logo + title, and profile menu.
+ */
+@Composable
+fun AuthenticatedTopBar(
+    viewModel: FreeverseViewModel,
+    onOpenDrawer: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val currentUser by viewModel.currentUser.collectAsState()
-    val notifications by viewModel.allNotifications.collectAsState()
+    val userRole = currentUser?.let { UserRole.fromKey(it.role) } ?: UserRole.MEMBER
+    val roleColor = Color(userRole.badgeColorHex)
+    val notifications by viewModel.roleNotifications.collectAsState()
     val unreadCount = notifications.count { !it.isRead }
 
-    var isRoleMenuExpanded by remember { mutableStateOf(false) }
+    var isProfileMenuExpanded by remember { mutableStateOf(false) }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = FreeverseSurface,
-        shadowElevation = 3.dp,
-        border = null
+        color = Color.White,
+        shadowElevation = 2.dp
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Main Header Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Left: Menu Icon + Partnered Logos (Freeverse + KIT)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f, fill = false)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Left: Hamburger + Logo + Title
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onOpenDrawer,
+                    modifier = Modifier.size(40.dp)
                 ) {
-                    IconButton(
-                        onClick = onOpenDrawer,
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Open Navigation Menu",
-                            tint = FreeverseTextPrimary
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(4.dp))
-
-                    // Brand & Logos container
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { viewModel.navigateTo(ScreenNav.HOME) }
-                            .padding(4.dp)
-                    ) {
-                        // FREEVERSE Logo
-                        Image(
-                            painter = painterResource(id = R.drawable.img_freeverse_logo),
-                            contentDescription = "FREEVERSE Logo",
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Fit
-                        )
-
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "FREEVERSE",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = FreeversePrimary,
-                                    letterSpacing = 0.5.sp
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFFEBF3FF)
-                                ) {
-                                    Text(
-                                        text = "KIT",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = FreeverseSecondary,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Kangeyam Institute of Technology",
-                                fontSize = 9.5.sp,
-                                color = FreeverseTextSecondary,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open Navigation Menu",
+                        tint = FreeverseTextPrimary
+                    )
                 }
 
-                // Right: Role Switcher & Action Icons
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    // Quick Role Switcher Pill
-                    Box {
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = FreeverseSoftLavender,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD6D7FB)),
-                            modifier = Modifier.clickable { isRoleMenuExpanded = true }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            when (currentUser.role) {
-                                                "STUDENT" -> FreeversePrimary
-                                                "CLIENT" -> FreeverseSecondary
-                                                "ADMIN" -> Color(0xFF10B981)
-                                                "SUPER_ADMIN" -> FreeverseWarning
-                                                "EVENT_MANAGER" -> Color(0xFFEC4899)
-                                                else -> FreeversePrimary
-                                            }
-                                        )
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = when (currentUser.role) {
-                                        "STUDENT" -> "Student"
-                                        "CLIENT" -> "Client"
-                                        "ADMIN" -> "Admin"
-                                        "SUPER_ADMIN" -> "Super Admin"
-                                        "EVENT_MANAGER" -> "Event Mgr"
-                                        else -> "Student"
-                                    },
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = FreeversePrimary
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Switch Role",
-                                    tint = FreeversePrimary,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
-                        }
+                Spacer(modifier = Modifier.width(6.dp))
 
-                        DropdownMenu(
-                            expanded = isRoleMenuExpanded,
-                            onDismissRequest = { isRoleMenuExpanded = false }
+                Image(
+                    painter = painterResource(id = R.drawable.img_freeverse_logo),
+                    contentDescription = "FREEVERSE",
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "FREEVERSE",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            color = FreeversePrimary,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Surface(
+                            shape = RoundedCornerShape(3.dp),
+                            color = roleColor.copy(alpha = 0.15f)
                         ) {
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(Icons.Default.School, contentDescription = null, tint = FreeversePrimary)
-                                },
-                                text = {
-                                    Column {
-                                        Text("Student / Freelancer", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        Text("student@freeverse.com • Student@123", fontSize = 11.sp, color = FreeverseTextSecondary)
-                                    }
-                                },
-                                onClick = {
-                                    viewModel.switchUserByRole(UserRole.STUDENT)
-                                    isRoleMenuExpanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(Icons.Default.Work, contentDescription = null, tint = FreeverseSecondary)
-                                },
-                                text = {
-                                    Column {
-                                        Text("🏢 Client", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        Text("client@freeverse.com • Client@123", fontSize = 11.sp, color = FreeverseTextSecondary)
-                                    }
-                                },
-                                onClick = {
-                                    viewModel.switchUserByRole(UserRole.CLIENT)
-                                    isRoleMenuExpanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(Icons.Default.Security, contentDescription = null, tint = Color(0xFF10B981))
-                                },
-                                text = {
-                                    Column {
-                                        Text("🛡️ Admin", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        Text("admin@freeverse.com • Admin@123", fontSize = 11.sp, color = FreeverseTextSecondary)
-                                    }
-                                },
-                                onClick = {
-                                    viewModel.switchUserByRole(UserRole.ADMIN)
-                                    isRoleMenuExpanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = FreeverseWarning)
-                                },
-                                text = {
-                                    Column {
-                                        Text("👑 Super Admin", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        Text("superadmin@freeverse.com • SuperAdmin@123", fontSize = 11.sp, color = FreeverseTextSecondary)
-                                    }
-                                },
-                                onClick = {
-                                    viewModel.switchUserByRole(UserRole.SUPER_ADMIN)
-                                    isRoleMenuExpanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(Icons.Default.Event, contentDescription = null, tint = Color(0xFFEC4899))
-                                },
-                                text = {
-                                    Column {
-                                        Text("🎪 Event Manager", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        Text("eventmanager@freeverse.com • Event@123", fontSize = 11.sp, color = FreeverseTextSecondary)
-                                    }
-                                },
-                                onClick = {
-                                    viewModel.switchUserByRole(UserRole.EVENT_MANAGER)
-                                    isRoleMenuExpanded = false
-                                }
+                            Text(
+                                text = if (userRole == UserRole.CLUB_COORDINATOR && currentUser?.coordinatorDesignation?.contains("President", ignoreCase = true) == true) "PRESIDENT" else userRole.displayName.uppercase(),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = roleColor,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                             )
                         }
                     }
+                    Text(
+                        text = when (userRole) {
+                            UserRole.SUPER_ADMIN -> "Platform Administration"
+                            UserRole.FACULTY_COORDINATOR -> "Faculty Oversight"
+                            UserRole.CLUB_COORDINATOR -> "President Workspace"
+                            UserRole.MEMBER -> "Freelancer Workspace"
+                            UserRole.CLIENT -> "Client Hiring Portal"
+                        },
+                        fontSize = 10.5.sp,
+                        color = FreeverseTextSecondary,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
+                }
+            }
 
-                    // Notification Bell
+            // Right: Notifications + User Profile Pill
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Notifications Icon
+                IconButton(
+                    onClick = { viewModel.isNotificationsOpen.value = true },
+                    modifier = Modifier.size(36.dp)
+                ) {
                     BadgedBox(
                         badge = {
                             if (unreadCount > 0) {
-                                Badge(containerColor = FreeversePrimary) {
-                                    Text(text = "$unreadCount", fontSize = 9.sp)
+                                Badge(
+                                    containerColor = FreeverseError,
+                                    contentColor = Color.White
+                                ) {
+                                    Text(
+                                        text = "$unreadCount",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }
                     ) {
-                        IconButton(
-                            onClick = { viewModel.isNotificationsOpen.value = true },
-                            modifier = Modifier.size(34.dp)
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = FreeverseTextPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // Profile Pill Menu
+                Box {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = roleColor.copy(alpha = 0.12f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, roleColor.copy(alpha = 0.35f)),
+                        modifier = Modifier.clickable { isProfileMenuExpanded = true }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                         ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                                    .background(roleColor),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = (currentUser?.name ?: "U").take(1).uppercase(),
+                                    fontSize = 11.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = (currentUser?.name?.split(" ")?.firstOrNull() ?: "User"),
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = roleColor,
+                                maxLines = 1
+                            )
                             Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "Notifications",
-                                tint = FreeverseTextPrimary,
-                                modifier = Modifier.size(20.dp)
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = roleColor,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
 
-                    // Dashboard Icon Button
-                    IconButton(
-                        onClick = { viewModel.navigateTo(ScreenNav.DASHBOARD) },
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(if (currentScreen == ScreenNav.DASHBOARD) FreeversePrimary else FreeverseSoftLavender)
+                    DropdownMenu(
+                        expanded = isProfileMenuExpanded,
+                        onDismissRequest = { isProfileMenuExpanded = false }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "User Dashboard",
-                            tint = if (currentScreen == ScreenNav.DASHBOARD) Color.White else FreeversePrimary,
-                            modifier = Modifier.size(20.dp)
+                        DropdownMenuItem(
+                            leadingIcon = {
+                                Icon(Icons.Default.AccountCircle, contentDescription = null, tint = roleColor)
+                            },
+                            text = {
+                                Column {
+                                    Text(currentUser?.name ?: "User", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(
+                                        text = currentUser?.coordinatorDesignation ?: userRole.displayName,
+                                        fontSize = 10.5.sp,
+                                        color = roleColor
+                                    )
+                                }
+                            },
+                            onClick = {
+                                viewModel.goToMyDashboard()
+                                isProfileMenuExpanded = false
+                            }
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                        DropdownMenuItem(
+                            leadingIcon = {
+                                Icon(Icons.Default.Logout, contentDescription = null, tint = Color(0xFFDC2626))
+                            },
+                            text = {
+                                Text(
+                                    text = "Log Out",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFDC2626)
+                                )
+                            },
+                            onClick = {
+                                isProfileMenuExpanded = false
+                                viewModel.isLogoutConfirmOpen.value = true
+                            }
                         )
                     }
                 }
@@ -322,332 +369,533 @@ fun FreeverseNavbar(
 }
 
 /**
- * Mobile Bottom Navigation Bar for rapid thumb access
+ * Role-Specific Sidebar & Drawer Content
+ * Used in both desktop left-rail and mobile slide-out drawer.
  */
 @Composable
-fun FreeverseBottomNav(
+fun RoleSpecificSidebarContent(
     viewModel: FreeverseViewModel,
+    onCloseDrawer: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val currentScreen by viewModel.currentScreen.collectAsState()
-    val gigs by viewModel.allGigs.collectAsState()
-
-    NavigationBar(
-        modifier = modifier.fillMaxWidth(),
-        containerColor = Color.White,
-        tonalElevation = 8.dp
-    ) {
-        val navItems = listOf(
-            Triple(ScreenNav.HOME, "Home", Icons.Default.Home),
-            Triple(ScreenNav.FREELANCERS, "Freelancers", Icons.Default.Person),
-            Triple(ScreenNav.PROJECTS, "Projects", Icons.Default.Work),
-            Triple(ScreenNav.GIGS, "Gigs", Icons.Default.Bolt),
-            Triple(ScreenNav.DASHBOARD, "Dashboard", Icons.Default.Dashboard)
-        )
-
-        navItems.forEach { (screen, label, icon) ->
-            val isSelected = currentScreen == screen
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = { viewModel.navigateTo(screen) },
-                icon = {
-                    if (screen == ScreenNav.GIGS) {
-                        BadgedBox(badge = {
-                            Badge(containerColor = FreeversePrimary) {
-                                Text("${gigs.size}", fontSize = 8.sp)
-                            }
-                        }) {
-                            Icon(icon, contentDescription = label)
-                        }
-                    } else {
-                        Icon(icon, contentDescription = label)
-                    }
-                },
-                label = { Text(label, fontSize = 10.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = FreeversePrimary,
-                    selectedTextColor = FreeversePrimary,
-                    indicatorColor = FreeverseSoftLavender,
-                    unselectedIconColor = FreeverseTextSecondary,
-                    unselectedTextColor = FreeverseTextSecondary
-                )
-            )
-        }
-    }
-}
-
-/**
- * Branded Navigation Drawer Content featuring authentic logos,
- * active user info, role switcher, navigation destinations, and KIT credentials.
- */
-@Composable
-fun FreeverseDrawerContent(
-    viewModel: FreeverseViewModel,
-    onCloseDrawer: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val currentScreen by viewModel.currentScreen.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
-    val notifications by viewModel.allNotifications.collectAsState()
-    val unreadCount = notifications.count { !it.isRead }
+    val user = currentUser ?: return
+    val userRole = UserRole.fromKey(user.role)
+    val roleColor = Color(userRole.badgeColorHex)
+    val coordinatorMode by viewModel.coordinatorMode.collectAsState()
 
-    ModalDrawerSheet(
-        modifier = modifier.width(310.dp),
-        drawerContainerColor = Color.White
+    val currentAdminTab by viewModel.selectedAdminTab.collectAsState()
+    val currentFacultyTab by viewModel.selectedFacultyTab.collectAsState()
+    val currentCoordTab by viewModel.selectedCoordinatorTab.collectAsState()
+    val currentMemberTab by viewModel.selectedMemberTab.collectAsState()
+    val currentClientTab by viewModel.selectedClientTab.collectAsState()
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .verticalScroll(rememberScrollState())
     ) {
-        Column(
+        // Sidebar Branding Header
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(FreeversePrimary, FreeverseSecondary)
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
-            // Header with Gradient & Authentic Logos
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(FreeversePrimary, FreeverseSecondary)
-                        )
-                    )
-                    .padding(20.dp)
-            ) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        // FREEVERSE Logo
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color.White,
-                            shadowElevation = 2.dp,
-                            modifier = Modifier.padding(2.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.img_freeverse_logo),
-                                contentDescription = "FREEVERSE Logo",
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .padding(3.dp),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-
-                        IconButton(
-                            onClick = onCloseDrawer,
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close Menu",
-                                tint = Color.White
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Text(
-                        text = "FREEVERSE",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Black,
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
                         color = Color.White,
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = "“Your Campus. Your Skills. Your Opportunities.”",
-                        fontSize = 11.sp,
-                        color = Color(0xFFE0E7FF),
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
+                        modifier = Modifier.padding(2.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_freeverse_logo),
+                            contentDescription = "FREEVERSE Logo",
+                            modifier = Modifier
+                                .size(36.dp)
+                                .padding(3.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
 
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = Color.White.copy(alpha = 0.2f)
                     ) {
                         Text(
-                            text = "Student Freelancing & Creative Hub",
-                            fontSize = 9.5.sp,
-                            color = Color.White,
+                            text = "KIT",
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
+                            color = Color.White,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                 }
-            }
 
-            // User Info Card
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = FreeverseSoftLavender,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD6D7FB))
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "FREEVERSE",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    letterSpacing = 0.5.sp,
+                    maxLines = 1,
+                    softWrap = false
+                )
+                Text(
+                    text = "“Your Campus. Your Skills. Your Opportunities.”",
+                    fontSize = 10.sp,
+                    color = Color(0xFFE0E7FF),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        // Authenticated Identity Profile Card
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = roleColor.copy(alpha = 0.08f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, roleColor.copy(alpha = 0.25f))
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(roleColor),
+                        contentAlignment = Alignment.Center
                     ) {
+                        Text(
+                            text = user.name.take(2).uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = user.name,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(FreeversePrimary),
-                                contentAlignment = Alignment.Center
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = roleColor
                             ) {
                                 Text(
-                                    text = currentUser.name.take(2).uppercase(),
+                                    text = user.coordinatorDesignation ?: userRole.displayName,
+                                    fontSize = 9.5.sp,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(currentUser.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                Text(
-                                    text = when (currentUser.role) {
-                                        "STUDENT" -> "Student Freelancer"
-                                        "COLLEGE_CLIENT" -> "College Department Client"
-                                        "EXTERNAL_CLIENT" -> "Industry Partner Client"
-                                        else -> "Platform Administrator"
-                                    },
-                                    fontSize = 10.sp,
-                                    color = FreeversePrimary,
-                                    fontWeight = FontWeight.SemiBold
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
                                 )
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = currentUser.organization,
-                        fontSize = 10.sp,
-                        color = FreeverseTextSecondary
-                    )
-                }
-            }
-
-            // Navigation Items List
-            Column(modifier = Modifier.padding(horizontal = 12.dp)) {
-                Text(
-                    text = "EXPLORE PLATFORM",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = FreeverseTextSecondary,
-                    letterSpacing = 1.sp,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                )
-
-                val menuItems = listOf(
-                    Triple(ScreenNav.HOME, "Home", Icons.Default.Home),
-                    Triple(ScreenNav.FREELANCERS, "Freelancers Marketplace", Icons.Default.Person),
-                    Triple(ScreenNav.PROJECTS, "Projects & Contracts", Icons.Default.Work),
-                    Triple(ScreenNav.SERVICES, "Student Services", Icons.Default.Build),
-                    Triple(ScreenNav.GIGS, "Campus Micro-Gigs", Icons.Default.Bolt),
-                    Triple(ScreenNav.EVENTS, "Events & Hackathons", Icons.Default.Event),
-                    Triple(ScreenNav.ABOUT_KIT, "About KIT College", Icons.Default.AccountBalance),
-                    Triple(ScreenNav.DASHBOARD, "My Dashboard", Icons.Default.Dashboard),
-                    Triple(ScreenNav.MESSAGES, "Project Messages", Icons.Default.Chat)
-                )
-
-                menuItems.forEach { (screen, label, icon) ->
-                    val isSelected = currentScreen == screen
-                    NavigationDrawerItem(
-                        icon = {
-                            Icon(
-                                icon,
-                                contentDescription = null,
-                                tint = if (isSelected) FreeversePrimary else FreeverseTextSecondary
-                            )
-                        },
-                        label = {
-                            Text(
-                                label,
-                                fontSize = 13.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                            )
-                        },
-                        selected = isSelected,
-                        onClick = {
-                            viewModel.navigateTo(screen)
-                            onCloseDrawer()
-                        },
-                        colors = NavigationDrawerItemDefaults.colors(
-                            selectedContainerColor = FreeverseSoftLavender,
-                            selectedTextColor = FreeversePrimary,
-                            unselectedTextColor = FreeverseTextPrimary
-                        ),
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Action Quick Links
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                OutlinedButton(
-                    onClick = {
-                        viewModel.isPostProjectOpen.value = true
-                        onCloseDrawer()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = FreeversePrimary)
-                ) {
-                    Icon(Icons.Default.AddCircle, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Post a Project", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                OutlinedButton(
-                    onClick = {
-                        viewModel.isSkillAssessmentOpen.value = true
-                        onCloseDrawer()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = FreeverseSecondary)
-                ) {
-                    Icon(Icons.Default.Quiz, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Skill Assessment", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Footer in Drawer
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
                 Text(
-                    text = "FREEVERSE PLATFORM",
+                    text = user.organization,
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = FreeversePrimary
-                )
-                Text(
-                    text = "Kangeyam Institute of Technology • Autonomous",
-                    fontSize = 9.sp,
-                    color = FreeverseTextSecondary
+                    color = FreeverseTextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
+
+        // President / Club Coordinator Dual Mode Switcher
+        if (userRole == UserRole.CLUB_COORDINATOR) {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = Color(0xFFF3E8FF),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDDD6FE)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 2.dp)
+            ) {
+                Row(modifier = Modifier.padding(3.dp)) {
+                    Surface(
+                        shape = RoundedCornerShape(7.dp),
+                        color = if (coordinatorMode == CoordinatorMode.COORDINATOR) Color(0xFF8B5CF6) else Color.Transparent,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                viewModel.setCoordinatorMode(CoordinatorMode.COORDINATOR)
+                                viewModel.setCoordinatorTab(0)
+                            }
+                    ) {
+                        Text(
+                            text = "Club Mgmt",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (coordinatorMode == CoordinatorMode.COORDINATOR) Color.White else Color(0xFF6D28D9),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 6.dp)
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(7.dp),
+                        color = if (coordinatorMode == CoordinatorMode.FREELANCER) Color(0xFF8B5CF6) else Color.Transparent,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                viewModel.setCoordinatorMode(CoordinatorMode.FREELANCER)
+                                viewModel.setCoordinatorTab(5)
+                            }
+                    ) {
+                        Text(
+                            text = "Freelancer",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (coordinatorMode == CoordinatorMode.FREELANCER) Color.White else Color(0xFF6D28D9),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+        }
+
+        // ROLE-SPECIFIC MENU ITEMS
+        Column(modifier = Modifier.padding(horizontal = 10.dp)) {
+            when (userRole) {
+                UserRole.SUPER_ADMIN -> {
+                    SidebarSectionHeader("PLATFORM MANAGEMENT", roleColor)
+                    val adminItems = listOf(
+                        Triple(0, "Dashboard Overview", Icons.Default.Dashboard),
+                        Triple(1, "User Management", Icons.Default.People),
+                        Triple(2, "Roles & Permissions", Icons.Default.Security),
+                        Triple(3, "Club Coordinators", Icons.Default.Groups),
+                        Triple(4, "Faculty Coordinators", Icons.Default.School),
+                        Triple(5, "Members & Talent", Icons.Default.Person),
+                        Triple(6, "Clients Directory", Icons.Default.BusinessCenter),
+                        Triple(7, "Projects & Contracts", Icons.Default.Work),
+                        Triple(8, "Events & Hackathons", Icons.Default.Event),
+                        Triple(9, "Service Categories", Icons.Default.Category),
+                        Triple(10, "Payments & Escrow", Icons.Default.Payments),
+                        Triple(11, "Complaints & Reports", Icons.Default.Report),
+                        Triple(12, "Notifications", Icons.Default.Notifications),
+                        Triple(13, "System Settings", Icons.Default.Settings)
+                    )
+                    adminItems.forEach { (tabIdx, label, icon) ->
+                        val isSelected = currentAdminTab == tabIdx
+                        SidebarItemButton(
+                            label = label,
+                            icon = icon,
+                            isSelected = isSelected,
+                            selectedColor = roleColor,
+                            onClick = {
+                                viewModel.setAdminTab(tabIdx)
+                                onCloseDrawer()
+                            }
+                        )
+                    }
+                }
+
+                UserRole.FACULTY_COORDINATOR -> {
+                    SidebarSectionHeader("FACULTY OVERSIGHT", roleColor)
+                    val facultyItems = listOf(
+                        Triple(0, "Club Overview", Icons.Default.Dashboard),
+                        Triple(1, "Events & Oversight", Icons.Default.Event),
+                        Triple(2, "Event Registrations", Icons.Default.Assignment),
+                        Triple(3, "Student Participation", Icons.Default.Analytics),
+                        Triple(4, "Club Coordinators", Icons.Default.Groups),
+                        Triple(5, "Community Activities", Icons.Default.Forum),
+                        Triple(6, "Freelancing Activity", Icons.Default.TrendingUp),
+                        Triple(7, "Project Monitoring", Icons.Default.Work),
+                        Triple(8, "Club Reports", Icons.Default.Assessment),
+                        Triple(9, "Notifications", Icons.Default.Notifications),
+                        Triple(10, "Faculty Profile", Icons.Default.AccountCircle)
+                    )
+                    facultyItems.forEach { (tabIdx, label, icon) ->
+                        val isSelected = currentFacultyTab == tabIdx
+                        SidebarItemButton(
+                            label = label,
+                            icon = icon,
+                            isSelected = isSelected,
+                            selectedColor = roleColor,
+                            onClick = {
+                                viewModel.setFacultyTab(tabIdx)
+                                onCloseDrawer()
+                            }
+                        )
+                    }
+                }
+
+                UserRole.CLUB_COORDINATOR -> {
+                    if (coordinatorMode == CoordinatorMode.COORDINATOR) {
+                        SidebarSectionHeader("CLUB MANAGEMENT", roleColor)
+                        val clubItems = listOf(
+                            Triple(0, "Club Overview", Icons.Default.Dashboard),
+                            Triple(1, "Events & Create", Icons.Default.Event),
+                            Triple(2, "Event Registrations", Icons.Default.Assignment),
+                            Triple(3, "Community Members", Icons.Default.People),
+                            Triple(4, "Announcements", Icons.Default.Campaign),
+                            Triple(10, "Club Reports", Icons.Default.Assessment),
+                            Triple(11, "Coordinator Profile", Icons.Default.AccountCircle)
+                        )
+                        clubItems.forEach { (tabIdx, label, icon) ->
+                            val isSelected = currentCoordTab == tabIdx
+                            SidebarItemButton(
+                                label = label,
+                                icon = icon,
+                                isSelected = isSelected,
+                                selectedColor = roleColor,
+                                onClick = {
+                                    viewModel.setCoordinatorTab(tabIdx)
+                                    onCloseDrawer()
+                                }
+                            )
+                        }
+                    } else {
+                        SidebarSectionHeader("FREELANCER WORKSPACE", roleColor)
+                        val freelanceItems = listOf(
+                            Triple(5, "Explore Projects", Icons.Default.Work),
+                            Triple(6, "My Services", Icons.Default.Build),
+                            Triple(7, "My Proposals & Work", Icons.Default.Assignment),
+                            Triple(8, "My Earnings", Icons.Default.Payments),
+                            Triple(9, "Project Messages", Icons.Default.Chat),
+                            Triple(11, "Portfolio & Skills", Icons.Default.Verified)
+                        )
+                        freelanceItems.forEach { (tabIdx, label, icon) ->
+                            val isSelected = currentCoordTab == tabIdx
+                            SidebarItemButton(
+                                label = label,
+                                icon = icon,
+                                isSelected = isSelected,
+                                selectedColor = roleColor,
+                                onClick = {
+                                    viewModel.setCoordinatorTab(tabIdx)
+                                    onCloseDrawer()
+                                }
+                            )
+                        }
+                    }
+                }
+
+                UserRole.MEMBER -> {
+                    SidebarSectionHeader("FREELANCER WORKSPACE", roleColor)
+                    val memberItems = listOf(
+                        Triple(0, "Explore Projects", Icons.Default.Work),
+                        Triple(1, "My Profile & Skills", Icons.Default.Person),
+                        Triple(2, "My Portfolio", Icons.Default.Verified),
+                        Triple(3, "My Services", Icons.Default.Build),
+                        Triple(4, "My Proposals", Icons.Default.Send),
+                        Triple(5, "My Active Contracts", Icons.Default.AssignmentTurnedIn),
+                        Triple(6, "Messages & Chat", Icons.Default.Chat),
+                        Triple(7, "Student Community", Icons.Default.Groups),
+                        Triple(8, "Events & Hackathons", Icons.Default.Event),
+                        Triple(9, "Earnings & Invoices", Icons.Default.Payments),
+                        Triple(10, "Notifications", Icons.Default.Notifications),
+                        Triple(11, "Settings", Icons.Default.Settings)
+                    )
+                    memberItems.forEach { (tabIdx, label, icon) ->
+                        val isSelected = currentMemberTab == tabIdx
+                        SidebarItemButton(
+                            label = label,
+                            icon = icon,
+                            isSelected = isSelected,
+                            selectedColor = roleColor,
+                            onClick = {
+                                viewModel.setMemberTab(tabIdx)
+                                onCloseDrawer()
+                            }
+                        )
+                    }
+                }
+
+                UserRole.CLIENT -> {
+                    SidebarSectionHeader("CLIENT HIRING", roleColor)
+                    val clientItems = listOf(
+                        Triple(0, "Post a Project", Icons.Default.AddCircle),
+                        Triple(1, "My Projects & Listings", Icons.Default.Work),
+                        Triple(2, "Proposals Received", Icons.Default.Inbox),
+                        Triple(3, "Find Student Talent", Icons.Default.People),
+                        Triple(4, "Hired Freelancers", Icons.Default.VerifiedUser),
+                        Triple(5, "Active Contracts", Icons.Default.AssignmentTurnedIn),
+                        Triple(6, "Completed Projects", Icons.Default.CheckCircle),
+                        Triple(7, "Messages & Chat", Icons.Default.Chat),
+                        Triple(8, "Payments & Escrow", Icons.Default.Payments),
+                        Triple(11, "Client Profile", Icons.Default.BusinessCenter)
+                    )
+                    clientItems.forEach { (tabIdx, label, icon) ->
+                        val isSelected = currentClientTab == tabIdx
+                        SidebarItemButton(
+                            label = label,
+                            icon = icon,
+                            isSelected = isSelected,
+                            selectedColor = roleColor,
+                            onClick = {
+                                viewModel.setClientTab(tabIdx)
+                                onCloseDrawer()
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f, fill = false))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp), color = FreeverseBorder)
+
+        // ACCOUNT & SECURE LOGOUT SECTION
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Button(
+                onClick = {
+                    onCloseDrawer()
+                    viewModel.isLogoutConfirmOpen.value = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFEE2E2),
+                    contentColor = Color(0xFFDC2626)
+                ),
+                contentPadding = PaddingValues(vertical = 10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Logout,
+                    contentDescription = "Logout",
+                    modifier = Modifier.size(16.dp),
+                    tint = Color(0xFFDC2626)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Log Out",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFDC2626)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
+}
+
+@Composable
+private fun SidebarSectionHeader(title: String, color: Color) {
+    Text(
+        text = title,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Black,
+        color = color,
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+    )
+}
+
+@Composable
+private fun SidebarItemButton(
+    label: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    selectedColor: Color,
+    onClick: () -> Unit
+) {
+    NavigationDrawerItem(
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isSelected) selectedColor else FreeverseTextSecondary,
+                modifier = Modifier.size(18.dp)
+            )
+        },
+        label = {
+            Text(
+                text = label,
+                fontSize = 12.5.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+            )
+        },
+        selected = isSelected,
+        onClick = onClick,
+        colors = NavigationDrawerItemDefaults.colors(
+            selectedContainerColor = selectedColor.copy(alpha = 0.12f),
+            selectedTextColor = selectedColor,
+            unselectedTextColor = FreeverseTextPrimary
+        ),
+        modifier = Modifier.padding(vertical = 1.5.dp)
+    )
+}
+
+/**
+ * Logout Confirmation Dialog
+ */
+@Composable
+fun LogoutConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Logout,
+                    contentDescription = null,
+                    tint = Color(0xFFDC2626),
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Log Out of FREEVERSE", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        },
+        text = {
+            Text(
+                "Are you sure you want to log out? You will return to the public landing page.",
+                fontSize = 13.5.sp,
+                color = FreeverseTextSecondary
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Log Out", fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Cancel", color = FreeverseTextPrimary)
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(14.dp)
+    )
 }

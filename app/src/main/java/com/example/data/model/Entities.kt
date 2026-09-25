@@ -8,7 +8,11 @@ data class UserEntity(
     @PrimaryKey val id: String,
     val name: String,
     val email: String,
-    val role: String, // STUDENT, COLLEGE_CLIENT, EXTERNAL_CLIENT, ADMIN
+    val role: String, // SUPER_ADMIN, FACULTY_COORDINATOR, CLUB_COORDINATOR, MEMBER, CLIENT
+    val coordinatorDesignation: String? = null, // e.g., "President", "Secretary", "Vice President", "Joint Secretary", "Treasurer", "Joint Treasurer"
+    val passwordHash: String = "",
+    val passwordSalt: String = "",
+    val accountStatus: String = "ACTIVE", // ACTIVE, DEACTIVATED, SUSPENDED
     val phone: String = "+91 98765 43210",
     val organization: String = "Kangeyam Institute of Technology",
     val department: String = "Computer Science & Engineering",
@@ -22,7 +26,10 @@ data class UserEntity(
     val github: String = "https://github.com/freeverse-kit",
     val linkedin: String = "https://linkedin.com/in/freeverse-kit",
     val portfolio: String = "https://freeverse.kit.ac.in",
-    val availability: String = "Available for Projects"
+    val availability: String = "Available for Projects",
+    val totalEarnings: Int = 18500,
+    val totalSpent: Int = 24000,
+    val joinedDate: String = "August 2026"
 )
 
 @Entity(tableName = "projects")
@@ -39,10 +46,11 @@ data class ProjectEntity(
     val budget: Int,
     val deadline: String,
     val proposalCount: Int = 0,
-    val status: String = "OPEN", // OPEN, IN_PROGRESS, WORK_SUBMITTED, COMPLETED
+    val status: String = "OPEN", // OPEN, IN_PROGRESS, WORK_SUBMITTED, COMPLETED, CANCELLED
     val hiredStudentId: String? = null,
     val hiredStudentName: String? = null,
     val progressPercent: Int = 0,
+    val isApprovedByAdmin: Boolean = true,
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -83,7 +91,7 @@ data class CampusGigEntity(
 data class EventEntity(
     @PrimaryKey val id: String,
     val title: String,
-    val category: String, // Workshop, Competition, Seminar, Technical, Non-Technical
+    val category: String, // Workshop, Competition, Seminar, Technical, Non-Technical, Hackathon
     val date: String,
     val time: String,
     val venue: String,
@@ -91,7 +99,8 @@ data class EventEntity(
     val rules: String,
     val registeredCount: Int = 24,
     val isRegistered: Boolean = false,
-    val isPast: Boolean = false
+    val isPast: Boolean = false,
+    val createdByCoordinator: String = "Bhavadharani S"
 )
 
 @Entity(tableName = "services")
@@ -99,6 +108,7 @@ data class ServiceEntity(
     @PrimaryKey val id: String,
     val title: String,
     val category: String,
+    val freelancerId: String = "user_bhavadharani",
     val freelancerName: String,
     val freelancerRole: String,
     val startingPrice: Int,
@@ -111,12 +121,13 @@ data class ServiceEntity(
 @Entity(tableName = "notifications")
 data class NotificationEntity(
     @PrimaryKey val id: String,
-    val userId: String,
+    val userId: String, // target userId or target roleKey ("SUPER_ADMIN", "FACULTY_COORDINATOR", etc.)
     val title: String,
     val message: String,
-    val type: String, // PROJECT, APPLICATION, HIRE, REVIEW, EVENT
+    val type: String, // PROJECT, APPLICATION, HIRE, REVIEW, EVENT, SYSTEM, PAYMENT, REPORT
     val timeAgo: String,
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "chat_messages")
@@ -139,4 +150,40 @@ data class AssessmentResultEntity(
     val scorePercent: Int,
     val verifiedSkills: String,
     val completedAt: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "club_announcements")
+data class AnnouncementEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val content: String,
+    val authorName: String,
+    val authorRole: String,
+    val date: String,
+    val priority: String = "NORMAL" // NORMAL, HIGH, URGENT
+)
+
+@Entity(tableName = "platform_transactions")
+data class TransactionEntity(
+    @PrimaryKey val id: String,
+    val projectId: String,
+    val projectTitle: String,
+    val senderName: String,
+    val receiverName: String,
+    val amount: Int,
+    val status: String, // COMPLETED, ESCROW_HELD, REFUNDED
+    val date: String,
+    val invoiceId: String
+)
+
+@Entity(tableName = "platform_reports")
+data class ReportComplaintEntity(
+    @PrimaryKey val id: String,
+    val reporterName: String,
+    val reporterRole: String,
+    val targetType: String, // PROJECT, FREELANCER, CLIENT, PAYMENT
+    val subject: String,
+    val description: String,
+    val status: String, // OPEN, INVESTIGATING, RESOLVED
+    val date: String
 )

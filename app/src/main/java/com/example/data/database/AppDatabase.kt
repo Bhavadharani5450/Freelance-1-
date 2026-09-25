@@ -5,15 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.data.dao.FreeverseDao
-import com.example.data.model.AssessmentResultEntity
-import com.example.data.model.CampusGigEntity
-import com.example.data.model.ChatMessageEntity
-import com.example.data.model.EventEntity
-import com.example.data.model.NotificationEntity
-import com.example.data.model.ProjectEntity
-import com.example.data.model.ProposalEntity
-import com.example.data.model.ServiceEntity
-import com.example.data.model.UserEntity
+import com.example.data.model.*
 
 @Database(
     entities = [
@@ -25,9 +17,12 @@ import com.example.data.model.UserEntity
         ServiceEntity::class,
         NotificationEntity::class,
         ChatMessageEntity::class,
-        AssessmentResultEntity::class
+        AssessmentResultEntity::class,
+        AnnouncementEntity::class,
+        TransactionEntity::class,
+        ReportComplaintEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

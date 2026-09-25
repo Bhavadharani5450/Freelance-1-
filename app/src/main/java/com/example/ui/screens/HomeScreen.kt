@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -73,35 +74,6 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Community Badge
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD6D7FB))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.EmojiEvents,
-                            contentDescription = null,
-                            tint = FreeverseWarning,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "FREEVERSE • STUDENT FREELANCING PLATFORM",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = FreeversePrimary,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // Headline
                 Text(
                     text = "Turn Your Skills Into\nReal-World Opportunities",
@@ -163,40 +135,63 @@ fun HomeScreen(
                 // Hero CTAs
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Button(
-                        onClick = { viewModel.navigateTo(ScreenNav.FREELANCERS) },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = FreeversePrimary),
-                        contentPadding = PaddingValues(vertical = 12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Explore Freelancers", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = { viewModel.navigateTo(ScreenNav.FREELANCERS) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = FreeversePrimary),
+                            contentPadding = PaddingValues(vertical = 11.dp)
+                        ) {
+                            Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Explore Freelancers", fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = { viewModel.navigateTo(ScreenNav.PROJECTS) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, FreeversePrimary),
+                            contentPadding = PaddingValues(vertical = 11.dp)
+                        ) {
+                            Icon(Icons.Default.Work, contentDescription = null, modifier = Modifier.size(16.dp), tint = FreeversePrimary)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Explore Projects", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = FreeversePrimary)
+                        }
                     }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = { viewModel.navigateTo(ScreenNav.PROJECTS) },
+                        Button(
+                            onClick = { viewModel.navigateTo(ScreenNav.LOGIN_HUB) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.5.dp, FreeversePrimary)
+                            colors = ButtonDefaults.buttonColors(containerColor = FreeverseSecondary),
+                            contentPadding = PaddingValues(vertical = 11.dp)
                         ) {
-                            Text("Find a Project", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FreeversePrimary)
+                            Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Join FREEVERSE", fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
                         }
 
                         Button(
-                            onClick = { viewModel.isAuthDialogOpen.value = true },
+                            onClick = { viewModel.navigateTo(ScreenNav.LOGIN_HUB) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = FreeverseSecondary)
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B)),
+                            contentPadding = PaddingValues(vertical = 11.dp)
                         ) {
-                            Text("Join Freeverse", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFFF59E0B))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Login Portals", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
@@ -1162,7 +1157,7 @@ fun HomeScreen(
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 Button(
-                    onClick = { viewModel.isAuthDialogOpen.value = true },
+                    onClick = { viewModel.navigateTo(ScreenNav.LOGIN_HUB) },
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                 ) {

@@ -86,7 +86,7 @@ fun MessagesScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(messages) { msg ->
-                val isMe = msg.senderId == currentUser.id
+                val isMe = currentUser != null && msg.senderId == currentUser?.id
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start

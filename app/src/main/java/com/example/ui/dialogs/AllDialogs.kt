@@ -39,8 +39,8 @@ fun ProposalDialog(
 ) {
     val currentUser by viewModel.currentUser.collectAsState()
     var coverMessage by remember { mutableStateOf("I am very interested in collaborating on this project. I have extensive experience building scalable solutions at KIT.") }
-    var relevantSkills by remember { mutableStateOf(currentUser.skills) }
-    var portfolioLink by remember { mutableStateOf(currentUser.portfolio) }
+    var relevantSkills by remember { mutableStateOf(currentUser?.skills ?: "Kotlin, Compose, UI/UX") }
+    var portfolioLink by remember { mutableStateOf(currentUser?.portfolio ?: "https://github.com/freeverse-kit") }
     var expectedDelivery by remember { mutableStateOf("7 Days") }
     var proposedBudget by remember { mutableStateOf(project.budget.toString()) }
 
@@ -102,7 +102,7 @@ fun ProposalDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "AI Proposal Assistant matched your Skill Passport (${currentUser.skills.take(25)}...) with this project's requirements!",
+                            text = "AI Proposal Assistant matched your Skill Passport (${(currentUser?.skills ?: "Skills").take(25)}...) with this project's requirements!",
                             fontSize = 11.5.sp,
                             color = FreeversePrimary,
                             lineHeight = 15.sp

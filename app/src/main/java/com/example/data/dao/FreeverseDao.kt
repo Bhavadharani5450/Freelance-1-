@@ -5,15 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.example.data.model.AssessmentResultEntity
-import com.example.data.model.CampusGigEntity
-import com.example.data.model.ChatMessageEntity
-import com.example.data.model.EventEntity
-import com.example.data.model.NotificationEntity
-import com.example.data.model.ProjectEntity
-import com.example.data.model.ProposalEntity
-import com.example.data.model.ServiceEntity
-import com.example.data.model.UserEntity
+import com.example.data.model.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -25,6 +17,12 @@ interface FreeverseDao {
     @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
     fun getUserById(id: String): Flow<UserEntity?>
 
+    @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
+    suspend fun getUserByEmail(email: String): UserEntity?
+
+    @Query("SELECT * FROM users WHERE role = :role")
+    fun getUsersByRole(role: String): Flow<List<UserEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: UserEntity)
 
@@ -34,12 +32,18 @@ interface FreeverseDao {
     @Update
     suspend fun updateUser(user: UserEntity)
 
+    @Query("UPDATE users SET accountStatus = :status WHERE id = :userId")
+    suspend fun setUserAccountStatus(userId: String, status: String)
+
     // Projects
     @Query("SELECT * FROM projects ORDER BY createdAt DESC")
     fun getAllProjects(): Flow<List<ProjectEntity>>
 
     @Query("SELECT * FROM projects WHERE id = :id LIMIT 1")
     fun getProjectById(id: String): Flow<ProjectEntity?>
+
+    @Query("SELECT * FROM projects WHERE clientId = :clientId ORDER BY createdAt DESC")
+    fun getProjectsByClient(clientId: String): Flow<List<ProjectEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProject(project: ProjectEntity)
@@ -86,6 +90,9 @@ interface FreeverseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvents(events: List<EventEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEvent(event: EventEntity)
+
     @Update
     suspend fun updateEvent(event: EventEntity)
 
@@ -96,9 +103,18 @@ interface FreeverseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertServices(services: List<ServiceEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertService(service: ServiceEntity)
+
+    @Update
+    suspend fun updateService(service: ServiceEntity)
+
     // Notifications
-    @Query("SELECT * FROM notifications ORDER BY timeAgo ASC")
+    @Query("SELECT * FROM notifications ORDER BY timestamp DESC")
     fun getAllNotifications(): Flow<List<NotificationEntity>>
+
+    @Query("SELECT * FROM notifications WHERE userId = :userId OR userId = :roleKey ORDER BY timestamp DESC")
+    fun getNotificationsForUser(userId: String, roleKey: String): Flow<List<NotificationEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNotification(notification: NotificationEntity)
@@ -128,4 +144,37 @@ interface FreeverseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAssessment(assessment: AssessmentResultEntity)
+
+    // Announcements
+    @Query("SELECT * FROM club_announcements ORDER BY date DESC")
+    fun getAllAnnouncements(): Flow<List<AnnouncementEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAnnouncement(announcement: AnnouncementEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAnnouncements(announcements: List<AnnouncementEntity>)
+
+    // Transactions
+    @Query("SELECT * FROM platform_transactions ORDER BY date DESC")
+    fun getAllTransactions(): Flow<List<TransactionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransaction(transaction: TransactionEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransactions(transactions: List<TransactionEntity>)
+
+    // Reports & Complaints
+    @Query("SELECT * FROM platform_reports ORDER BY date DESC")
+    fun getAllReports(): Flow<List<ReportComplaintEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReport(report: ReportComplaintEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReports(reports: List<ReportComplaintEntity>)
+
+    @Update
+    suspend fun updateReport(report: ReportComplaintEntity)
 }
